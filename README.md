@@ -29,5 +29,4 @@ Let's start
 ```
 ansible-playbook playbook.yml -i hosts.ini
 ```
-
 Welcome to fire hell with up ruby-app
