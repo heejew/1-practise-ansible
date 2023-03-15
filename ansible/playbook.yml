@@ -60,9 +60,9 @@
 
   tasks:
 
-    - name: "Postgres: Install"
-      ansible.builtin.include_role:
-        name: postgres
+    # - name: "Postgres: Install"
+    #   ansible.builtin.include_role:
+    #     name: postgres
 
     - name: "App: Install"
       ansible.builtin.include_role:
