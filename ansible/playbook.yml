@@ -16,7 +16,7 @@
     APP_REPO_LOCAL: "{{APP_NAME}}"
 
     SECRET_KEY_BASE: oh_my_secret
-    RAILS_ENV: development
+    RAILS_ENV: production
     RAILS_LOG_TO_STDOUT: 1
     DB_HOST: 127.0.0.1
     DB_PORT: 5432
@@ -29,14 +29,14 @@
 
   pre_tasks:
 
-    # Lazy
-    - name: Install requirements
-      become_user: user # Your local user
-      delegate_to: localhost
-      ignore_errors: yes
-      ansible.builtin.command: |
-        ansible-galaxy install -r requirements.yml      
-      # ansible-galaxy collection install install -r requirements.yml   
+    # Lazy lazy
+    # - name: Install requirements
+    #   become_user: user # Your local user
+    #   delegate_to: localhost
+    #   ignore_errors: yes
+    #   ansible.builtin.command: |
+    #     ansible-galaxy install -r requirements.yml      
+    #   # ansible-galaxy collection install install -r requirements.yml   
 
     ## Используется локальный ansible с установленным git. Предполагается, что и с ключами все хорошо и красиво.
     ## Сервер приложения не должен знать ничего о репозитории и тем более не должен иметь ключей.
