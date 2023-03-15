@@ -1,43 +1,43 @@
 ---
 
-# - name: Install packages 1
-#   ansible.builtin.yum:
-#     state: present
-#     name: 
-#       - "centos-release-scl"
-#       - "centos-release-scl-rh"
-#       - "ca-certificates"
-#       - "epel-release"
-#       - "@development tools"
+- name: Install packages 1
+  ansible.builtin.yum:
+    state: present
+    name: 
+      - "centos-release-scl"
+      - "centos-release-scl-rh"
+      - "ca-certificates"
+      - "epel-release"
+      - "@development tools"
 
-# - name: Install ruby
-#   ansible.builtin.yum:
-#     state: present
-#     enablerepo: centos-sclo-rh
-#     name: 
-#       - "rh-ruby26"
-#       - "rh-ruby26-scldevel"
-#       - "rh-ruby26-ruby-devel"
-#       - "rh-ruby26-rubygem-bundler"
+- name: Install ruby
+  ansible.builtin.yum:
+    state: present
+    enablerepo: centos-sclo-rh
+    name: 
+      - "rh-ruby26"
+      - "rh-ruby26-scldevel"
+      - "rh-ruby26-ruby-devel"
+      - "rh-ruby26-rubygem-bundler"
 
-# - name: Install packages 2
-#   ansible.builtin.yum:
-#     update_cache: yes
-#     state: present
-#     name: 
-#       - "make"
-#       - "gcc"
-#       - "gcc-c++"
-#       - "kernel-devel"
-#       - "postgresql-devel"
-#       - "libxml2-devel"
-#       - "libxslt-devel"
-#       - "libxml2"
-#       - "libxslt"
-#       - "zlib"
-#       - "nodejs"
-#       - "libyaml"
-#       # - "python-pip"
+- name: Install packages 2
+  ansible.builtin.yum:
+    update_cache: yes
+    state: present
+    name: 
+      - "make"
+      - "gcc"
+      - "gcc-c++"
+      - "kernel-devel"
+      - "postgresql-devel"
+      - "libxml2-devel"
+      - "libxslt-devel"
+      - "libxml2"
+      - "libxslt"
+      - "zlib"
+      - "nodejs"
+      - "libyaml"
+      # - "python-pip"
 
 - name: Add user
   ansible.builtin.user:
@@ -66,58 +66,58 @@
     owner: "{{APP_USER}}"
     group: "{{APP_USER}}"
 
-# - name: Copy application
-#   become_user: "{{APP_USER}}"
-#   ansible.builtin.copy:
-#     src: "{{APP_REPO_LOCAL}}/"
-#     dest: "{{APP_FOLDER}}"
-#     owner: "{{APP_USER}}"
-#     group: "{{APP_USER}}"
-
-
+- name: Copy application
+  become_user: "{{APP_USER}}"
+  ansible.builtin.copy:
+    src: "{{APP_REPO_LOCAL}}/"
+    dest: "{{APP_FOLDER}}"
+    owner: "{{APP_USER}}"
+    group: "{{APP_USER}}"
 
 - name: "Bundle config and install"
   become: true
   become_user: "{{APP_USER}}"
   block:
-    # 
-    # Для работы bundle clean --force
-    - name: Add to PATH
-      copy:
-        content: |
-          export GEM_HOME="$(ruby -e 'puts Gem.user_dir')"
-          export PATH="$PATH:$GEM_HOME/bin"
-        dest: "/etc/profile.d/my_path.sh"
 
     - name: Add to PATH
-      ansible.builtin.shell: |
-        source scl_source enable rh-ruby26
-        export GEM_HOME="$(ruby -e 'puts Gem.user_dir')"
-        export PATH="$PATH:$GEM_HOME/bin"
+      ansible.builtin.copy:
+        content: |
+          source scl_source enable rh-ruby26
+          export GEM_HOME="$(ruby -e 'puts Gem.user_dir')"
+          export PATH="$PATH:$GEM_HOME/bin"
+          export BUNDLE_GEMFILE="{{APP_FOLDER}}/Gemfile"
+        dest: "/home/{{APP_USER}}/.bashrc"
 
     - name: "Install bundler and nokogiri"
       ansible.builtin.shell: |
-        source scl_source enable rh-ruby26 && gem install bundler:1.16.2 nokogiri:1.8.2
+        source /home/{{APP_USER}}/.bashrc && gem install bundler:1.16.2 nokogiri:1.8.2
       args:
         chdir: "{{APP_FOLDER}}" 
+        executable: /bin/bash
 
     - name: "Bundle config"
       ansible.builtin.shell: |
-        source scl_source enable rh-ruby26 && bundle config build.nokogiri --use-system-libraries
+        source /home/{{APP_USER}}/.bashrc && bundle config build.nokogiri --use-system-libraries
       args:
         chdir: "{{APP_FOLDER}}"
+        executable: /bin/bash
 
     - name: "Bundle install"
       ansible.builtin.shell: |
-        source scl_source enable rh-ruby26 && bundle install --no-cache --without development
+        source /home/{{APP_USER}}/.bashrc && bundle install --no-cache --without development
       args:
         chdir: "{{APP_FOLDER}}"
+        executable: /bin/bash
       register: command_result
       failed_when: "command_result.stderr != ''"
       changed_when: "command_result.stderr == ''"
 
-      # bundle clean --force
-      ## Костыль. В идеале, надо без --clean
+    - name: "Bundle clean"
+      ansible.builtin.shell: |
+        source /home/{{APP_USER}}/.bashrc && bundle clean --force
+      args:
+        chdir: "{{APP_FOLDER}}"
+        executable: /bin/bash
 
 - name: "Setting systemd"
   block:

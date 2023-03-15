@@ -16,7 +16,7 @@
     APP_REPO_LOCAL: "{{APP_NAME}}"
 
     SECRET_KEY_BASE: oh_my_secret
-    RAILS_ENV: production
+    RAILS_ENV: development
     RAILS_LOG_TO_STDOUT: 1
     DB_HOST: 127.0.0.1
     DB_PORT: 5432
@@ -38,15 +38,15 @@
         ansible-galaxy install -r requirements.yml      
       # ansible-galaxy collection install install -r requirements.yml   
 
-  #   ## Используется локальный ansible с установленным git. Предполагается, что и с ключами все хорошо и красиво.
-  #   ## Сервер приложения не должен знать ничего о репозитории и тем более не должен иметь ключей.
-  #   - name: "LOCALHOST: Clone repo"
-  #     delegate_to: 127.0.0.1
-  #     become: false
-  #     ansible.builtin.git:
-  #       repo: "{{APP_REPO}}"
-  #       dest: "{{APP_REPO_LOCAL}}"
-  #       version: master
+    ## Используется локальный ansible с установленным git. Предполагается, что и с ключами все хорошо и красиво.
+    ## Сервер приложения не должен знать ничего о репозитории и тем более не должен иметь ключей.
+    - name: "LOCALHOST: Clone repo"
+      delegate_to: 127.0.0.1
+      become: false
+      ansible.builtin.git:
+        repo: "{{APP_REPO}}"
+        dest: "{{APP_REPO_LOCAL}}"
+        version: master
 
   handlers:
 
@@ -55,35 +55,33 @@
         name: "nginx"
         state: "reloaded"
 
-
   tasks:
 
-    # - name: "Postgres: Install"
-    #   ansible.builtin.include_role:
-    #     name: postgres
+    - name: "Postgres: Install"
+      ansible.builtin.include_role:
+        name: postgres
 
-    # - name: "App: Install"
-    #   ansible.builtin.include_role:
-    #     name: app
+    - name: "App: Install"
+      ansible.builtin.include_role:
+        name: app
 
     - name: "Nginx: Install"
       ansible.builtin.include_role:
         name: nginx
 
-
-    # Костыли пермишенов
+    # Костыли пермишенов для nginx
     - name: Adding nginx to app group
       ansible.builtin.user:
         name: nginx
         groups: "{{APP_USER}}"
         append: yes
       notify: restart nginx
-  
+
     - name: Set ownership
       ansible.builtin.file: 
         path: "/home/{{APP_USER}}"
         state: directory
         recurse: yes
         # mode: u=rwx,g=rwx,o=rwx
-        mode: og+x
+        mode: g+x
         owner: "{{APP_USER}}"
