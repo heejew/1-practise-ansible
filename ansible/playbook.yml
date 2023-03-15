@@ -20,8 +20,8 @@
     RAILS_LOG_TO_STDOUT: 1
     DB_HOST: 127.0.0.1
     DB_PORT: 5432
-    DB_NAME: "{{APP_NAME}}"
-    DB_USER: "{{APP_NAME}}"
+    DB_NAME: "{{APP_NAME}}_app"
+    DB_USER: "{{APP_NAME}}_user"
     DB_PASSWORD: "xpaste_security#"
 
 
@@ -48,8 +48,6 @@
   #       dest: "{{APP_REPO_LOCAL}}"
   #       version: master
 
-  # roles:
-  # - database
   handlers:
 
     - name: restart nginx
@@ -64,27 +62,28 @@
     #   ansible.builtin.include_role:
     #     name: postgres
 
-    - name: "App: Install"
-      ansible.builtin.include_role:
-        name: app
+    # - name: "App: Install"
+    #   ansible.builtin.include_role:
+    #     name: app
 
     - name: "Nginx: Install"
       ansible.builtin.include_role:
         name: nginx
 
 
-
+    # Костыли пермишенов
     - name: Adding nginx to app group
       ansible.builtin.user:
         name: nginx
         groups: "{{APP_USER}}"
         append: yes
       notify: restart nginx
-
+  
     - name: Set ownership
       ansible.builtin.file: 
-        path: "{{APP_FOLDER}}"
+        path: "/home/{{APP_USER}}"
         state: directory
         recurse: yes
-        mode: u=rwx,g=rwx,o=rwx
+        # mode: u=rwx,g=rwx,o=rwx
+        mode: og+x
         owner: "{{APP_USER}}"

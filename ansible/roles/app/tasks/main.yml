@@ -1,55 +1,48 @@
 ---
-# tasks file for app
-# - name: Update
+
+# - name: Install packages 1
 #   ansible.builtin.yum:
-#     update_only: yes
+#     state: present
+#     name: 
+#       - "centos-release-scl"
+#       - "centos-release-scl-rh"
+#       - "ca-certificates"
+#       - "epel-release"
+#       - "@development tools"
 
+# - name: Install ruby
+#   ansible.builtin.yum:
+#     state: present
+#     enablerepo: centos-sclo-rh
+#     name: 
+#       - "rh-ruby26"
+#       - "rh-ruby26-scldevel"
+#       - "rh-ruby26-ruby-devel"
+#       - "rh-ruby26-rubygem-bundler"
 
-
-- name: Install packages 1
-  ansible.builtin.yum:
-    # update_cache: yes
-    state: present
-    name: 
-      - "centos-release-scl"
-      - "centos-release-scl-rh"
-      - "ca-certificates"
-      - "epel-release"
-      - "@development tools"
-
-- name: Install ruby
-  ansible.builtin.yum:
-    state: present
-    enablerepo: centos-sclo-rh
-    name: 
-      - "rh-ruby26"
-      - "rh-ruby26-scldevel"
-      - "rh-ruby26-ruby-devel"
-      - "rh-ruby26-rubygem-bundler"
-
-- name: Install packages 2
-  ansible.builtin.yum:
-    update_cache: yes
-    state: present
-    name: 
-      # - "make"
-      # - "gcc"
-      # - "gcc-c++"
-      # - "kernel-devel"
-      - "postgresql-devel"
-      - "libxml2-devel"
-      - "libxslt-devel"
-      - "libxml2"
-      - "libxslt"
-      - "zlib"
-      - "nodejs"
-      - "libyaml"
-      # - "python-pip"
+# - name: Install packages 2
+#   ansible.builtin.yum:
+#     update_cache: yes
+#     state: present
+#     name: 
+#       - "make"
+#       - "gcc"
+#       - "gcc-c++"
+#       - "kernel-devel"
+#       - "postgresql-devel"
+#       - "libxml2-devel"
+#       - "libxslt-devel"
+#       - "libxml2"
+#       - "libxslt"
+#       - "zlib"
+#       - "nodejs"
+#       - "libyaml"
+#       # - "python-pip"
 
 - name: Add user
   ansible.builtin.user:
     name: "{{ APP_USER }}"
-    shell: /bin/sh
+    shell: /bin/bash
     groups: wheel
     append: yes
 
@@ -60,35 +53,11 @@
     dest: "/etc/sudoers.d/wheel_nopasswd"
     mode: 0440
 
-# - name: Add sudo for user
-#   ansible.builtin.copy:
-#     content: "%{{APP_USER}} ALL=(ALL:ALL) NOPASSWD:ALL"
-#     dest: "/etc/sudoers.d/{{APP_USER}}_nopasswd"
-#     mode: 0440
-
 - name: Add sub dir for socket puma
   ansible.builtin.file:
     path: "/var/run/puma/"
     state: directory
     owner: "{{APP_USER}}"
-
-## Не смог подружить роль с 2.5. c 3.0 вообще анрил. 
-# - name: Install ruby
-#   ignore_errors: yes
-#   ansible.builtin.include_role:
-#     name: geerlingguy.ruby
-#   vars:
-#     ruby_install_bundler: true
-#     ruby_install_from_source: true
-#     ruby_download_url: http://cache.ruby-lang.org/pub/ruby/3.0/ruby-3.0.0.tar.gz
-#     ruby_version: 3.0.0
-#     ruby_install_gems_user: "{{ APP_USER }}"
-    # ruby_install_gems:
-    #   # - name: pkg-config
-    #   #   user_install: false
-    #   - name: bundler
-    #     version: '< 2'
-    #     user_install: false
 
 - name: Create application dir
   ansible.builtin.file:
@@ -97,52 +66,58 @@
     owner: "{{APP_USER}}"
     group: "{{APP_USER}}"
 
+# - name: Copy application
+#   become_user: "{{APP_USER}}"
+#   ansible.builtin.copy:
+#     src: "{{APP_REPO_LOCAL}}/"
+#     dest: "{{APP_FOLDER}}"
+#     owner: "{{APP_USER}}"
+#     group: "{{APP_USER}}"
 
-- name: Copy application
-  become_user: "{{APP_USER}}"
-  ansible.builtin.copy:
-    src: "{{APP_REPO_LOCAL}}/"
-    dest: "{{APP_FOLDER}}"
-    owner: "{{APP_USER}}"
-    group: "{{APP_USER}}"
 
-# - name: Set ownership
-#   file: 
-#     path: {APP_FOLDER}
-#     state: directory
-#     recurse: yes
-#     owner: {APP_USER}
 
 - name: "Bundle config and install"
   become: true
   become_user: "{{APP_USER}}"
   block:
-    - name: "Install bundler and nokogiri"
+    # 
+    # Для работы bundle clean --force
+    - name: Add to PATH
+      copy:
+        content: |
+          export GEM_HOME="$(ruby -e 'puts Gem.user_dir')"
+          export PATH="$PATH:$GEM_HOME/bin"
+        dest: "/etc/profile.d/my_path.sh"
+
+    - name: Add to PATH
       ansible.builtin.shell: |
         source scl_source enable rh-ruby26
-        gem install bundler:1.16.2 nokogiri:1.8.2
+        export GEM_HOME="$(ruby -e 'puts Gem.user_dir')"
+        export PATH="$PATH:$GEM_HOME/bin"
+
+    - name: "Install bundler and nokogiri"
+      ansible.builtin.shell: |
+        source scl_source enable rh-ruby26 && gem install bundler:1.16.2 nokogiri:1.8.2
       args:
         chdir: "{{APP_FOLDER}}" 
 
     - name: "Bundle config"
       ansible.builtin.shell: |
-        source scl_source enable rh-ruby26
-        bundle config build.nokogiri --use-system-libraries
+        source scl_source enable rh-ruby26 && bundle config build.nokogiri --use-system-libraries
       args:
         chdir: "{{APP_FOLDER}}"
 
     - name: "Bundle install"
       ansible.builtin.shell: |
-        source scl_source enable rh-ruby26
-        bundle install --no-cache --without development && bundle clean --force
+        source scl_source enable rh-ruby26 && bundle install --no-cache --without development
       args:
         chdir: "{{APP_FOLDER}}"
       register: command_result
       failed_when: "command_result.stderr != ''"
       changed_when: "command_result.stderr == ''"
-      ## Костыль. В идеале, надо без --clean
-        #  BUNDLE_GEMFILE="{{APP_FOLDER}}/Gemfile"
 
+      # bundle clean --force
+      ## Костыль. В идеале, надо без --clean
 
 - name: "Setting systemd"
   block:

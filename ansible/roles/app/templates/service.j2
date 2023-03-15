@@ -6,8 +6,8 @@ After=network.target
 User={{APP_USER}}
 Type=simple
 WorkingDirectory={{APP_FOLDER}}
-ExecStartPre=/bin/bash -lc 'source /opt/rh/rh-ruby25/enable; SECRET_KEY_BASE={{SECRET_KEY_BASE}} RAILS_ENV={{RAILS_ENV}} RAILS_LOG_TO_STDOUT={{RAILS_LOG_TO_STDOUT}} DB_HOST={{DB_HOST}} DB_PORT={{DB_PORT}} DB_NAME={{DB_NAME}} DB_USER={{DB_USER}} DB_PASSWORD={{DB_PASSWORD}} bundle exec rake db:migrate'
-ExecStart=/bin/bash -lc 'source /opt/rh/rh-ruby25/enable; SECRET_KEY_BASE={{SECRET_KEY_BASE}} RAILS_ENV={{RAILS_ENV}} RAILS_LOG_TO_STDOUT={{RAILS_LOG_TO_STDOUT}} DB_HOST={{DB_HOST}} DB_PORT={{DB_PORT}} DB_NAME={{DB_NAME}} DB_USER={{DB_USER}} DB_PASSWORD={{DB_PASSWORD}} bundle exec puma -b unix:/var/run/puma/puma.sock -e $RAILS_ENV config.ru'
+ExecStartPre=/bin/bash -lc 'source scl_source enable rh-ruby26; SECRET_KEY_BASE={{SECRET_KEY_BASE}} RAILS_ENV={{RAILS_ENV}} RAILS_LOG_TO_STDOUT={{RAILS_LOG_TO_STDOUT}} DB_HOST={{DB_HOST}} DB_PORT={{DB_PORT}} DB_NAME={{DB_NAME}} DB_USER={{DB_USER}} DB_PASSWORD={{DB_PASSWORD}} bundle exec rake db:migrate'
+ExecStart=/bin/bash -lc 'source scl_source enable rh-ruby26; SECRET_KEY_BASE={{SECRET_KEY_BASE}} RAILS_ENV={{RAILS_ENV}} RAILS_LOG_TO_STDOUT={{RAILS_LOG_TO_STDOUT}} DB_HOST={{DB_HOST}} DB_PORT={{DB_PORT}} DB_NAME={{DB_NAME}} DB_USER={{DB_USER}} DB_PASSWORD={{DB_PASSWORD}} bundle exec puma -b unix:/var/run/puma/puma.sock -e $RAILS_ENV config.ru'
 
 [Install]
 WantedBy=multi-user.target
